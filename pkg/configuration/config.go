@@ -15,9 +15,12 @@ type Configuration struct {
 	Token string
 
 	FileBufferSize int
+	FileMaxSize uint64
+	DownloadTimeout int64
 
 	BotLogDir string
 	CheckerLogDir string
+	FilesDir string
 }
 
 // Читает конфигурацию из файла
