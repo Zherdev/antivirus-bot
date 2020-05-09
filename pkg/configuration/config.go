@@ -23,6 +23,7 @@ type Configuration struct {
 	AdminLogDir   string
 	FilesDir      string
 
+	AdminHost string
 	AdminShutdownPath string
 	AdminPort         string
 	AdminToken        string
