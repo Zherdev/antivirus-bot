@@ -93,7 +93,7 @@ func (a *Admin) Run(stop context.CancelFunc, ctx context.Context, papaWg *sync.W
 	})
 
 	srv := &http.Server{
-		Addr:         ":" + a.config.AdminPort,
+		Addr:         a.config.AdminHost + ":" + a.config.AdminPort,
 		Handler:      srvMux,
 		ReadTimeout:  time.Duration(a.config.AdminTimeout) * time.Second,
 		WriteTimeout: time.Duration(a.config.AdminTimeout) * time.Second,

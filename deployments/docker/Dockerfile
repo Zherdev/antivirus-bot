@@ -15,7 +15,8 @@ WORKDIR /build/
 
 ADD config.json /build/
 
-ENV GO111MODULE on
-RUN go build -mod=mod -o /build/antivirus-bot /go/src/antivirus-bot/cmd/app/main.go
+RUN go get /go/src/antivirus-bot/...
+RUN go build -o /build/antivirus-bot /go/src/antivirus-bot/cmd/app/main.go
+>>>>>>> dev
 
 ENTRYPOINT ./antivirus-bot
