@@ -3,3 +3,5 @@ vendor/
 .directory
 
 config.json
+logs
+files

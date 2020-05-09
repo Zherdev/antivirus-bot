@@ -14,13 +14,13 @@ import (
 type Configuration struct {
 	Token string
 
-	FileBufferSize int
-	FileMaxSize uint64
+	FileBufferSize  int
+	FileMaxSize     uint64
 	DownloadTimeout int64
 
-	BotLogDir string
+	BotLogDir     string
 	CheckerLogDir string
-	FilesDir string
+	FilesDir      string
 }
 
 // Читает конфигурацию из файла
