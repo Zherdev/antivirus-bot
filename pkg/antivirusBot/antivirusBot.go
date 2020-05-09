@@ -35,7 +35,7 @@ func NewBot(
 		return nil, fmt.Errorf("checkerChan is nil in %s", method)
 	}
 
-	api, err := botgolang.NewBot(config.Token)
+	api, err := botgolang.NewBot(config.IcqToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "botgolang error in %s", method)
 	}
@@ -77,6 +77,7 @@ func (b *Bot) Run(ctx context.Context, papaWg *sync.WaitGroup) {
 
 		case <-ctx.Done():
 			wg.Wait()
+			b.logger.Info("bot is done")
 			papaWg.Done()
 			return
 		}

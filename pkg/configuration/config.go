@@ -12,7 +12,7 @@ import (
 
 // Хранит параметры конфигурации
 type Configuration struct {
-	Token string
+	IcqToken string
 
 	FileBufferSize  int
 	FileMaxSize     uint64
@@ -20,7 +20,13 @@ type Configuration struct {
 
 	BotLogDir     string
 	CheckerLogDir string
+	AdminLogDir   string
 	FilesDir      string
+
+	AdminShutdownPath string
+	AdminPort         string
+	AdminToken        string
+	AdminTimeout      int64
 }
 
 // Читает конфигурацию из файла

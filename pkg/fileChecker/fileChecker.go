@@ -82,6 +82,7 @@ func (c *FileChecker) Run(ctx context.Context, papaWg *sync.WaitGroup) {
 			c.checkFile(fileForCheck)
 
 		case <-ctx.Done():
+			c.logger.Info("fileChecker is done")
 			papaWg.Done()
 			return
 		}

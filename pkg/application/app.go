@@ -4,6 +4,7 @@
 package application
 
 import (
+	"antivirus-bot/pkg/admin"
 	"antivirus-bot/pkg/antivirusBot"
 	"antivirus-bot/pkg/antivirusClients"
 	"antivirus-bot/pkg/common"
@@ -23,6 +24,7 @@ import (
 type App struct {
 	bot         *antivirusBot.Bot
 	checker     *fileChecker.FileChecker
+	admin       *admin.Admin
 	config      *configuration.Configuration
 	logger      *logrus.Logger
 	closeOnExit []*os.File
@@ -56,6 +58,18 @@ func NewApp(configFilePath string) *App {
 	if err != nil {
 		a.done()
 		a.logger.Fatal("can't create logfile for checker: ", err.Error())
+	}
+	adminLog, err := a.logOut(a.config.AdminLogDir)
+	if err != nil {
+		a.done()
+		a.logger.Fatal("can't create logfile for admin: ", err.Error())
+	}
+
+	// Админка
+	a.admin, err = admin.NewAdmin(adminLog, a.config)
+	if err != nil {
+		a.done()
+		a.logger.Fatal("can't create admin: ", err.Error())
 	}
 
 	// Канал для передачи файлов
@@ -95,14 +109,17 @@ func (a *App) logOut(dirPath string) (io.Writer, error) {
 	return io.MultiWriter(logFile, os.Stdout), nil
 }
 
-// Запускает приложение. Остановка по контексту ctx
-func (a *App) Run(ctx context.Context) {
+// Запускает приложение
+func (a *App) Run() {
 	a.logger.Info("Start app...")
+
+	ctx, stop := context.WithCancel(context.Background())
 
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go a.bot.Run(ctx, wg)
 	go a.checker.Run(ctx, wg)
+	go a.admin.Run(stop, ctx, wg)
 
 	<-ctx.Done()
 	wg.Wait()
@@ -114,5 +131,5 @@ func (a *App) done() {
 	for _, file := range a.closeOnExit {
 		file.Close()
 	}
-	a.logger.Info("done")
+	a.logger.Info("app is done")
 }

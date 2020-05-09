@@ -25,7 +25,7 @@ func NewClamavClient() *ClamavClient {
 	return &ClamavClient{}
 }
 
-// Проверка файла на угрозы через clamd
+// Проверка файла на угрозы через clamdscan
 func (c *ClamavClient) CheckFile(filePath string, checkResult chan *common.FileForCheck) {
 	checkCmd := exec.Command("clamdscan", "--fdpass", "--stream", filePath)
 	out, err := checkCmd.Output()
