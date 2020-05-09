@@ -97,9 +97,9 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 	}
 
 	wasFiles := false
-	for idx, part := range update.Payload.Parts {
+	for _, part := range update.Payload.Parts {
 		if part.Type == botgolang.FILE {
-			b.sendText(update, getFileMsg, idx+1)
+			b.sendText(update, getFileMsg)
 			b.processFile(update, part.Payload.FileID, ctx)
 			wasFiles = true
 		}

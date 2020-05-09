@@ -56,7 +56,7 @@ func (c *ClamavClient) CheckFile(filePath string, checkResult chan *common.FileF
 			Err: fmt.Errorf("parse error in clamavClient"),
 		}
 	}
-	startPos += len(filePath)
+	startPos += len(filePath) + 1
 	endPos := bytes.IndexRune(out, '\n')
 	if endPos == -1 {
 		checkResult <- &common.FileForCheck{
