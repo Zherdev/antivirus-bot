@@ -17,6 +17,4 @@ ADD config.json /build/
 
 RUN go build -o /build/antivirus-bot /go/src/antivirus-bot/cmd/app/main.go
 
-EXPOSE 8085
-
 ENTRYPOINT ./antivirus-bot
