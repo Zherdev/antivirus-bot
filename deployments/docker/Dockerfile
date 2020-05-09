@@ -15,6 +15,6 @@ WORKDIR /build/
 
 ADD config.json /build/
 
-RUN go build -o /build/antivirus-bot /go/src/antivirus-bot/cmd/app/main.go
+RUN go build -mod=mod -o /build/antivirus-bot /go/src/antivirus-bot/cmd/app/main.go
 
 ENTRYPOINT ./antivirus-bot
