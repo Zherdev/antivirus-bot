@@ -26,7 +26,11 @@ FileChecker скачивает файлы на проверку в порядк�
 проверку в антивирусах осуществляет параллельно. 
 Логи сохраняются в директории согласно config.json. 
 
-![flow image](flow.svg)
+![flow_start image](assets/flow_start.svg)
+
+![flow_file image](assets/flow_file.svg)
+
+![flow_url image](assets/flow_url.svg)
 
 Запуск приложения
 -----------------
@@ -74,7 +78,7 @@ FileChecker скачивает файлы на проверку в порядк�
 Для этого реализуйте интерфейс antivirusClients.Client:
 ```
 type Client interface {
-	CheckFile(filePath string, checkResult chan *common.FileForCheck)
+	CheckFile(fileForCheck *common.FileForCheck, checkResult chan *common.AntivirusResult)
 }
 ```
 
@@ -84,8 +88,14 @@ type Client interface {
 Клиенты-антивирусы добавляются в бот при инициализации приложения в application.NewApp. 
 Пример:
 ```
-myAntivirusCLient := antivirusClients.NewMyAntivirusClient()
-_ = a.checker.AddAv(myAntivirusCLient)
+myAntivirusClient := antivirusClients.NewMyAntivirusClient()
+_ = a.checker.AddAv(myAntivirusClient)
 ```
 Теперь каждый файл будет проходить проверку через соответствующий антивирус.
 Сам антивирус лучше запускать в контейнере, внеся соответствующие изменения в docker-compose.yml.
+
+История версий
+--------------
+* v2. Добавлена проверка файлов по ссылкам. Изменен интерфейс antivirusClients.Client
+* v1.1 hotfix. Исправлены ошибки
+* v1. Первый релиз
