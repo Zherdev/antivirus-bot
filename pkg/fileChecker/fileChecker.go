@@ -156,11 +156,12 @@ func (c *FileChecker) downloadFile(file *common.FileForCheck) error {
 	}
 	defer resp.Body.Close()
 
-	// Проверяем, что файл не слишком велик
-	if resp.ContentLength < 0 || uint64(resp.ContentLength) > c.config.FileMaxSize {
+	// Проверяем, что файл не слишком велик, если указана длина ContentLength
+	if uint64(resp.ContentLength) > c.config.FileMaxSize {
 		c.logger.
 			WithField("method", method).
 			WithField("fileUrl", file.Url).
+			WithField("fileSize", resp.ContentLength).
 			Trace(ErrFileTooBig)
 		return ErrFileTooBig
 	}
@@ -179,8 +180,16 @@ func (c *FileChecker) downloadFile(file *common.FileForCheck) error {
 	defer out.Close()
 
 	// Записываем в файл
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
+	bytesRead, err := io.CopyN(out, resp.Body, int64(c.config.FileMaxSize))
+	if err == nil { // файл не уместился в N байт
+		c.logger.
+			WithField("method", method).
+			WithField("fileUrl", file.Url).
+			WithField("fileSize >= ", bytesRead).
+			Trace(ErrFileTooBig)
+		return ErrFileTooBig
+	}
+	if !errors.Is(err, io.EOF) {
 		c.logger.
 			WithField("method", method).
 			WithField("filePath", file.Path).

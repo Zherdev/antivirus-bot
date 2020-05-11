@@ -98,20 +98,21 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 		return
 	}
 
-	// Пользователь мог прислать url
-	url, err := url.ParseRequestURI(update.Payload.Text)
-	if err == nil {
+	// Вложений в сообщении нет
+	if len(update.Payload.Parts) == 0 {
+		// Пользователь мог прислать url в тексте
+		fileUrl, err := url.ParseRequestURI(update.Payload.Text)
+		if err != nil {
+			b.sendText(update, badMessageMsg)
+			return
+		}
+
 		b.sendText(update, getFileMsg)
-		b.processUrl(update, url, ctx)
+		b.processUrl(update, fileUrl, ctx)
 		return
 	}
 
 	// Иначе ожидаем в его сообщении файл
-	if len(update.Payload.Parts) == 0 {
-		b.sendText(update, badMessageMsg)
-		return
-	}
-
 	wasFiles := false
 	for _, part := range update.Payload.Parts {
 		if part.Type == botgolang.FILE {
