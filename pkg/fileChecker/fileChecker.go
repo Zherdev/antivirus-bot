@@ -157,7 +157,7 @@ func (c *FileChecker) downloadFile(file *common.FileForCheck) error {
 	defer resp.Body.Close()
 
 	// Проверяем, что файл не слишком велик, если указана длина ContentLength
-	if uint64(resp.ContentLength) > c.config.FileMaxSize {
+	if resp.ContentLength > 0 && uint64(resp.ContentLength) > c.config.FileMaxSize {
 		c.logger.
 			WithField("method", method).
 			WithField("fileUrl", file.Url).

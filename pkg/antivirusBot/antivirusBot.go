@@ -174,7 +174,7 @@ func (b* Bot) check(update *botgolang.Event, forCheck *common.FileForCheck, ctx 
 	for {
 		select {
 		case <-forCheck.Checked: // проверка завершена
-			if forCheck.Err == fileChecker.ErrFileTooBig {
+			if errors.Is(forCheck.Err, fileChecker.ErrFileTooBig) {
 				b.sendText(update, fileTooBigMsg, forCheck.Name, b.config.FileMaxSize)
 				return
 			}
