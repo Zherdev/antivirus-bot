@@ -20,6 +20,10 @@ import (
 	"time"
 )
 
+var (
+	ErrFileTooBig = errors.New("file is too big in FileChecker")
+)
+
 // Получает файлы от бота и отправляет их на проверку в антивирусы
 type FileChecker struct {
 	avClients   []antivirusClients.Client // антивирусы, в которых проверяются файлы
@@ -91,7 +95,7 @@ func (c *FileChecker) Run(ctx context.Context, papaWg *sync.WaitGroup) {
 
 // Проверяет файл file
 func (c *FileChecker) checkFile(file *common.FileForCheck) {
-	filePath, err := c.downloadFile(file)
+	err := c.downloadFile(file)
 	if err != nil {
 		file.IsOk = false
 		file.Err = err
@@ -101,11 +105,11 @@ func (c *FileChecker) checkFile(file *common.FileForCheck) {
 
 	file.IsOk = true
 	file.Err = nil
-	resultChan := make(chan *common.FileForCheck, len(c.avClients))
+	resultChan := make(chan *common.AntivirusResult, len(c.avClients))
 	msgBuilder := strings.Builder{}
 	// Отправляем файлы на проверку в антивирусы
 	for _, avClient := range c.avClients {
-		go avClient.CheckFile(filePath, resultChan)
+		go avClient.CheckFile(file, resultChan)
 	}
 	for range c.avClients {
 		checkResult := <-resultChan
@@ -132,36 +136,45 @@ func (c *FileChecker) checkFile(file *common.FileForCheck) {
 
 	file.Checked <- struct{}{}
 
-	err = os.Remove(filePath)
+	err = os.Remove(file.Path)
 	if err != nil {
 		c.logger.WithField("method", "checkFile").Error(err)
 	}
 }
 
-// Возвращает путь к скачанному файлу
-func (c *FileChecker) downloadFile(file *common.FileForCheck) (string, error) {
+// Скачивает файл. Устанавливает путь к скачаному файлу в поле Path
+func (c *FileChecker) downloadFile(file *common.FileForCheck) error {
 	method := "FileChecker.downloadFile"
 
-	resp, err := c.downloader.Get(file.File.URL)
+	resp, err := c.downloader.Get(file.Url)
 	if err != nil {
 		c.logger.
 			WithField("method", method).
-			WithField("url", file.File.URL).
+			WithField("url", file.Url).
 			Error(err)
-		return "", errors.Wrap(err, "can't GET file in downloadFile")
+		return errors.Wrap(err, "can't GET file in downloadFile")
 	}
 	defer resp.Body.Close()
 
+	// Проверяем, что файл не слишком велик
+	if resp.ContentLength < 0 || uint64(resp.ContentLength) > c.config.FileMaxSize {
+		c.logger.
+			WithField("method", method).
+			WithField("fileUrl", file.Url).
+			Trace(ErrFileTooBig)
+		return ErrFileTooBig
+	}
+
 	// Создаем файл
-	filePath := fmt.Sprintf("%s/%d", c.config.FilesDir, time.Now().Unix())
+	file.Path = fmt.Sprintf("%s/%d", c.config.FilesDir, time.Now().Unix())
 	os.MkdirAll("./"+c.config.FilesDir, os.ModePerm)
-	out, err := os.Create(filePath)
+	out, err := os.Create(file.Path)
 	if err != nil {
 		c.logger.
 			WithField("method", method).
-			WithField("filePath", filePath).
+			WithField("filePath", file.Path).
 			Error(err)
-		return "", errors.Wrapf(err, "can't create file in %s", method)
+		return errors.Wrapf(err, "can't create file in %s", method)
 	}
 	defer out.Close()
 
@@ -170,14 +183,14 @@ func (c *FileChecker) downloadFile(file *common.FileForCheck) (string, error) {
 	if err != nil {
 		c.logger.
 			WithField("method", method).
-			WithField("filePath", filePath).
+			WithField("filePath", file.Path).
 			Error(err)
-		return "", errors.Wrapf(err, "can't write to file in %s", method)
+		return errors.Wrapf(err, "can't write to file in %s", method)
 	}
 
 	c.logger.
 		WithField("method", method).
-		WithField("filePath", filePath).
+		WithField("filePath", file.Path).
 		Trace("downloaded")
-	return filePath, nil
+	return nil
 }

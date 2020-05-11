@@ -6,12 +6,14 @@ package antivirusBot
 import (
 	"antivirus-bot/pkg/common"
 	"antivirus-bot/pkg/configuration"
+	"antivirus-bot/pkg/fileChecker"
 	"context"
 	"fmt"
 	"github.com/mail-ru-im/bot-golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
+	"net/url"
 	"sync"
 )
 
@@ -91,7 +93,20 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 		b.sendText(update, startMsg)
 		return
 	}
+	// Помощь, за нее отвечает icq
+	if update.Payload.Text == helpUserMsg {
+		return
+	}
 
+	// Пользователь мог прислать url
+	url, err := url.ParseRequestURI(update.Payload.Text)
+	if err == nil {
+		b.sendText(update, getFileMsg)
+		b.processUrl(update, url, ctx)
+		return
+	}
+
+	// Иначе ожидаем в его сообщении файл
 	if len(update.Payload.Parts) == 0 {
 		b.sendText(update, badMessageMsg)
 		return
@@ -106,13 +121,24 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 		}
 	}
 
-	// пользователь прислал сообщение без файлов
+	// пользователь прислал сообщение без ссылки/файлов
 	if !wasFiles {
 		b.sendText(update, noFilesMsg)
 	}
 }
 
-// Обработка файла от пользователя. Отправляем его на проверку
+// Обработка ссылки от пользователя
+func (b *Bot) processUrl(update *botgolang.Event, fileUrl *url.URL, ctx context.Context) {
+	forCheck := &common.FileForCheck{
+		Url: fileUrl.String(),
+		Name: fileUrl.String(),
+		Checked: make(chan struct{}, 1),
+	}
+
+	b.check(update, forCheck, ctx)
+}
+
+// Обработка файла от пользователя
 func (b *Bot) processFile(update *botgolang.Event, fileId string, ctx context.Context) {
 	method := "antivirusBot.processFile"
 
@@ -132,18 +158,28 @@ func (b *Bot) processFile(update *botgolang.Event, fileId string, ctx context.Co
 	}
 
 	forCheck := &common.FileForCheck{
-		File:    file,
+		Url: file.URL,
+		Name: file.Name,
 		Checked: make(chan struct{}, 1),
 	}
 
-	// отправляем файл на проверку
+	b.check(update, forCheck, ctx)
+}
+
+// отправляем файл на проверку
+func (b* Bot) check(update *botgolang.Event, forCheck *common.FileForCheck, ctx context.Context) {
 	b.checkerChan <- forCheck
 
 	for {
 		select {
 		case <-forCheck.Checked: // проверка завершена
+			if forCheck.Err == fileChecker.ErrFileTooBig {
+				b.sendText(update, fileTooBigMsg, forCheck.Name, b.config.FileMaxSize)
+				return
+			}
+
 			if forCheck.Err != nil {
-				b.sendText(update, checkErrorMsg, file.Name)
+				b.sendText(update, checkErrorMsg, forCheck.Name)
 				b.logger.
 					WithField("method", "antivirusBot.processFile").
 					WithField("request", update).
@@ -151,14 +187,14 @@ func (b *Bot) processFile(update *botgolang.Event, fileId string, ctx context.Co
 				return
 			}
 			if forCheck.IsOk {
-				b.sendText(update, fileIsOkMsg, file.Name)
+				b.sendText(update, fileIsOkMsg, forCheck.Name)
 				return
 			}
-			b.sendText(update, fileIsInfectedMsg, file.Name, forCheck.Msg)
+			b.sendText(update, fileIsInfectedMsg, forCheck.Name, forCheck.Msg)
 			return
 
 		case <-ctx.Done(): // бота выключили
-			b.sendText(update, sorryGoodbyeMsg, file.Name)
+			b.sendText(update, sorryGoodbyeMsg, forCheck.Name)
 			return
 		}
 	}

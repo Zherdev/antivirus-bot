@@ -7,5 +7,5 @@ package antivirusClients
 import "antivirus-bot/pkg/common"
 
 type Client interface {
-	CheckFile(filePath string, checkResult chan *common.FileForCheck)
+	CheckFile(fileForCheck *common.FileForCheck, checkResult chan *common.AntivirusResult)
 }

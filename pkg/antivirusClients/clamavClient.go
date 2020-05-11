@@ -26,15 +26,18 @@ func NewClamavClient() *ClamavClient {
 }
 
 // Проверка файла на угрозы через clamdscan
-func (c *ClamavClient) CheckFile(filePath string, checkResult chan *common.FileForCheck) {
-	checkCmd := exec.Command("clamdscan", "--fdpass", "--stream", filePath)
+func (c *ClamavClient) CheckFile(
+	fileForCheck *common.FileForCheck,
+	checkResult chan *common.AntivirusResult) {
+
+	checkCmd := exec.Command("clamdscan", "--fdpass", "--stream", fileForCheck.Path)
 	out, err := checkCmd.Output()
 
 	// ошибка clamdscan
 	if err != nil {
 		exitError, ok := err.(*exec.ExitError)
 		if !ok || (ok && exitError.ProcessState.ExitCode() != virusExitCode) {
-			checkResult <- &common.FileForCheck{
+			checkResult <- &common.AntivirusResult{
 				Err: errors.Wrap(err, "clamd error"),
 			}
 			return
@@ -43,29 +46,29 @@ func (c *ClamavClient) CheckFile(filePath string, checkResult chan *common.FileF
 
 	// нет угроз
 	if bytes.Contains(out, ok) {
-		checkResult <- &common.FileForCheck{
+		checkResult <- &common.AntivirusResult{
 			IsOk: true,
 		}
 		return
 	}
 
 	// обнаружена угроза. Получаем ее название
-	startPos := bytes.Index(out, []byte(filePath))
+	startPos := bytes.Index(out, []byte(fileForCheck.Path))
 	if startPos == -1 {
-		checkResult <- &common.FileForCheck{
+		checkResult <- &common.AntivirusResult{
 			Err: fmt.Errorf("parse error in clamavClient"),
 		}
 	}
-	startPos += len(filePath) + 1
+	startPos += len(fileForCheck.Path) + 1
 	endPos := bytes.IndexRune(out, '\n')
 	if endPos == -1 {
-		checkResult <- &common.FileForCheck{
+		checkResult <- &common.AntivirusResult{
 			Err: fmt.Errorf("parse error in clamavClient"),
 		}
 	}
 	virusName := out[startPos:endPos]
 
-	checkResult <- &common.FileForCheck{
+	checkResult <- &common.AntivirusResult{
 		IsOk: false,
 		Msg:  string(virusName),
 	}
