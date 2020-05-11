@@ -110,7 +110,10 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 		}
 
 		fileUrl, err := url.ParseRequestURI(urlStr)
-		if err != nil {
+		if err != nil ||
+			strings.Contains(strings.ToLower(fileUrl.Host), "localhost") ||
+			strings.Contains(fileUrl.Host, "127.0.0.1") {
+			// ошибочный url, либо в нем есть запрещнный хост
 			b.sendText(update, badMessageMsg)
 			return
 		}
