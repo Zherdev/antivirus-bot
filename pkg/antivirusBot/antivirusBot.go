@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/url"
+	"strings"
 	"sync"
 )
 
@@ -101,7 +102,14 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 	// Вложений в сообщении нет
 	if len(update.Payload.Parts) == 0 {
 		// Пользователь мог прислать url в тексте
-		fileUrl, err := url.ParseRequestURI(update.Payload.Text)
+		urlStr := strings.TrimSpace(update.Payload.Text)
+		if !strings.HasPrefix(urlStr, "http://") &&
+			!strings.HasPrefix(urlStr, "https://") &&
+			!strings.HasPrefix(urlStr, "ftp://") {
+			urlStr = "http://" + urlStr
+		}
+
+		fileUrl, err := url.ParseRequestURI(urlStr)
 		if err != nil {
 			b.sendText(update, badMessageMsg)
 			return
