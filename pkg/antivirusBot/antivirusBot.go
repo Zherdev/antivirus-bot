@@ -102,17 +102,8 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 	// Вложений в сообщении нет
 	if len(update.Payload.Parts) == 0 {
 		// Пользователь мог прислать url в тексте
-		urlStr := strings.TrimSpace(update.Payload.Text)
-		if !strings.HasPrefix(urlStr, "http://") &&
-			!strings.HasPrefix(urlStr, "https://") &&
-			!strings.HasPrefix(urlStr, "ftp://") {
-			urlStr = "http://" + urlStr
-		}
-
-		fileUrl, err := url.ParseRequestURI(urlStr)
-		if err != nil ||
-			strings.Contains(strings.ToLower(fileUrl.Host), "localhost") ||
-			strings.Contains(fileUrl.Host, "127.0.0.1") {
+		fileUrl, err := parseRequestURI(update.Payload.Text)
+		if err != nil {
 			// ошибочный url, либо в нем есть запрещнный хост
 			b.sendText(update, badMessageMsg)
 			return
@@ -137,6 +128,37 @@ func (b *Bot) processMessage(update *botgolang.Event, ctx context.Context) {
 	if !wasFiles {
 		b.sendText(update, noFilesMsg)
 	}
+}
+
+// Парсит url из текста
+func parseRequestURI(text string) (*url.URL, error) {
+	method := "parseRequestURI"
+	urlStr := strings.TrimSpace(text)
+
+	if !strings.ContainsRune(urlStr, '.') {
+		// для нас не бывает валидных url без точек
+		return nil, fmt.Errorf("no dots in %s", method)
+	}
+
+	// добавляем протокол
+	if !strings.HasPrefix(urlStr, "http://") &&
+		!strings.HasPrefix(urlStr, "https://") &&
+		!strings.HasPrefix(urlStr, "ftp://") {
+		urlStr = "http://" + urlStr
+	}
+
+	fileUrl, err := url.ParseRequestURI(urlStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "not url in %s", method)
+	}
+
+	if strings.Contains(strings.ToLower(fileUrl.Host), "localhost") ||
+		strings.Contains(fileUrl.Host, "127.0.0.1") {
+		// запрещнный хост
+		return nil, errors.Wrapf(err, "prohibited url in %s", method)
+	}
+
+	return fileUrl, nil
 }
 
 // Обработка ссылки от пользователя
