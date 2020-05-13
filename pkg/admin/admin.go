@@ -101,7 +101,7 @@ func (a *Admin) Run(stop context.CancelFunc, ctx context.Context, papaWg *sync.W
 	echoFileHandler := echo.WrapHandler(http.StripPrefix(a.config.AdminGetLogsPath, fileServer))
 
 	a.e.POST(a.config.AdminShutdownPath, a.shutdownHandler, a.authMiddleware)
-	a.e.POST(a.config.AdminGetLogsPath, echoFileHandler, a.authMiddleware)
+	a.e.POST(a.config.AdminGetLogsPath + "*", echoFileHandler, a.authMiddleware)
 
 	go func() {
 		if err := a.e.Start(a.config.AdminHost + ":" + a.config.AdminPort); err != nil {
