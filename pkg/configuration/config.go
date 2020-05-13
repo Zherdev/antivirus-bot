@@ -25,6 +25,8 @@ type Configuration struct {
 
 	AdminHost         string
 	AdminShutdownPath string
+	AdminLogsPath     string
+	AdminGetLogsPath  string
 	AdminPort         string
 	AdminToken        string
 	AdminTimeout      int64

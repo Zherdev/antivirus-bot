@@ -48,7 +48,7 @@ func NewFileChecker(
 	logger := logrus.New()
 	logger.SetLevel(logrus.TraceLevel)
 	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: "30-12-2006 15:04:05",
+		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	logger.SetOutput(logOut)
 

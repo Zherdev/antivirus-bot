@@ -6,7 +6,7 @@ package antivirusBot
 
 const (
 	startUserMsg = "/start"
-	helpUserMsg = "/help"
+	helpUserMsg  = "/help"
 
 	helpMsg           = "Отправьте мне в сообщении ссылку на файл либо прикрепите сам файл, и я проверю его."
 	startMsg          = "Привет! Я Антивирус-бот. Проверю безопасность файлов.\nПриватность: я не запоминаю содержание Ваших файлов.\nИспользую антивирусы: ClamAV.\n\n" + helpMsg

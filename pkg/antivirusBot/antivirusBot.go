@@ -46,7 +46,7 @@ func NewBot(
 	logger := logrus.New()
 	logger.SetLevel(logrus.TraceLevel)
 	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: "30-12-2006 15:04:05",
+		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	logger.SetOutput(logOut)
 
@@ -164,8 +164,8 @@ func parseRequestURI(text string) (*url.URL, error) {
 // Обработка ссылки от пользователя
 func (b *Bot) processUrl(update *botgolang.Event, fileUrl *url.URL, ctx context.Context) {
 	forCheck := &common.FileForCheck{
-		Url: fileUrl.String(),
-		Name: fileUrl.String(),
+		Url:     fileUrl.String(),
+		Name:    fileUrl.String(),
 		Checked: make(chan struct{}, 1),
 	}
 
@@ -192,8 +192,8 @@ func (b *Bot) processFile(update *botgolang.Event, fileId string, ctx context.Co
 	}
 
 	forCheck := &common.FileForCheck{
-		Url: file.URL,
-		Name: file.Name,
+		Url:     file.URL,
+		Name:    file.Name,
 		Checked: make(chan struct{}, 1),
 	}
 
@@ -201,7 +201,7 @@ func (b *Bot) processFile(update *botgolang.Event, fileId string, ctx context.Co
 }
 
 // отправляем файл на проверку
-func (b* Bot) check(update *botgolang.Event, forCheck *common.FileForCheck, ctx context.Context) {
+func (b *Bot) check(update *botgolang.Event, forCheck *common.FileForCheck, ctx context.Context) {
 	b.checkerChan <- forCheck
 
 	for {
